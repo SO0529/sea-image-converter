@@ -60,10 +60,10 @@ class RRDBModel(nn.Module):
         self.last_conv = nn.Sequential(*_layers)
 
     def forward(self, x):
-        fea = self.conv_first(x)
+        fea = self.conv_first(x)        # [B, 64, 256, 144]
         for m in self.RRDB_trunk.children():
             fea = m(fea)
-        trunk = self.trunk_conv(fea)
-        fea = fea + trunk
-        out = self.last_conv(fea)
+        trunk = self.trunk_conv(fea)    # [B, 64, 256, 144]
+        fea = fea + trunk               # [B, 64, 256, 144]
+        out = self.last_conv(fea)       # [B, 3, 256, 144]
         return out

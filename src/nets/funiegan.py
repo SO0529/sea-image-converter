@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from rrdb_model import RRDBModel
+from .rrdb_model import RRDBModel
 
 
 class UNetDown(nn.Module):
@@ -42,13 +42,11 @@ class GeneratorFunieGAN(nn.Module):
         self.down1 = UNetDown(in_nc, 32, bn=False)
         self.down2 = UNetDown(32, 128)
         self.down3 = UNetDown(128, 256)
-        self.down4 = UNetDown(256, 256)
-        self.down5 = UNetDown(256, 256, bn=False)
+        self.down4 = UNetDown(256, 256, bn=False)
         # decoding layers
         self.up1 = UNetUp(256, 256)
-        self.up2 = UNetUp(512, 256)
-        self.up3 = UNetUp(512, 128)
-        self.up4 = UNetUp(256, 32)
+        self.up2 = UNetUp(512, 128)
+        self.up3 = UNetUp(256, 32)
         self.final = nn.Sequential(
             nn.Upsample(scale_factor=2),
             nn.ZeroPad2d((1, 0, 1, 0)),
@@ -65,17 +63,15 @@ class GeneratorFunieGAN(nn.Module):
             )
 
     def forward(self, x):
-        d1 = self.down1(x)
-        d2 = self.down2(d1)
-        d3 = self.down3(d2)
-        d4 = self.down4(d3)
-        d5 = self.down5(d4)
-        u1 = self.up1(d5, d4)
-        u2 = self.up2(u1, d3)
-        u3 = self.up3(u2, d2)
-        u45 = self.up4(u3, d1)
-        funie_out = self.final(u45)
-        out = self.rrdb_model(funie_out)
+        d1 = self.down1(x)          # [B, 32, 128, 72]
+        d2 = self.down2(d1)         # [B, 128, 64, 36]
+        d3 = self.down3(d2)         # [B, 256, 32, 18]
+        d4 = self.down4(d3)         # [B, 256, 16, 9]
+        u1 = self.up1(d4, d3)       # [B, 512, 32, 18]
+        u2 = self.up2(u1, d2)       # [B, 256, 64, 36]
+        u3 = self.up3(u2, d1)       # [B, 64, 128, 72]
+        funie_out = self.final(u3)  # [B, 3, 256, 144]
+        out = self.rrdb_model(funie_out)    # [B, 3, 256, 144]
         return out
 
 

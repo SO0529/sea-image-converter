@@ -555,48 +555,16 @@ def format_measurements(meas):
 # --------------------------------------------
 # logger
 # --------------------------------------------
-def get_log_param(cfg, phase="train"):
-    scheduler = (cfg.model.scheduler._target_).split(".")[-1]
-    optimizer = (cfg.model.optimizer._target_).split(".")[-1]
-
-    log_prams = {"model": cfg.model.model_params.name, "scale": cfg.scale}
-
-    if phase == "train":
-        additional_params = {
-            "batch_size": cfg.data.batch_size,
-            "loss_type": cfg.model.train.loss_type,
-            "scheduler": scheduler,
-            "optimizer": optimizer,
-            "hr_shape": cfg.data.hr_shape,
+def get_log_param(cfg):
+    log_prams = {
+        "input_shape": cfg.input_shape,
+        "batch_size": cfg.batch_size,
+        "optimizer": cfg.trainer.optimizer,
+        "lr": cfg.trainer.optimizer.lr,
+        "b1": cfg.trainer.optimizer.b1,
+        "b2": cfg.trainer.optimizer.b2,
+        "scheduler": cfg.trainer.scheduler,
+        "milestone": cfg.trainer.scheduler.milestones,
+        "gamma": cfg.trainer.scheduler.gamma
         }
-        log_prams = dict(**log_prams, **additional_params)
-
-    if "flow" in log_prams["model"]:
-        additional_params = {
-            "affine_net": cfg.model.model_params.affine_net,
-            "lr_encoder": cfg.model.model_params.lr_encoder.name,
-            "K": cfg.model.model_params.flow.K,
-            "Level": cfg.model.model_params.flow.L,
-        }
-        log_prams = dict(**log_prams, **additional_params)
-
-    if "resflow" in log_prams["model"]:
-        additional_params = {"g_fn": cfg.model.model_params.resblock.g_fn}
-        log_prams = dict(**log_prams, **additional_params)
-
-    if "swinir" in log_prams["model"]:
-        additional_params = {
-            "window_size": cfg.model.model_params.window_size,
-            "img_range": cfg.model.model_params.img_range,
-            "depths": cfg.model.model_params.depths,
-            "embed_dim": cfg.model.model_params.embed_dim,
-            "num_feat": cfg.model.model_params.num_feat,
-            "num_heads": cfg.model.model_params.num_heads,
-            "mlp_ratio": cfg.model.model_params.mlp_ratio,
-            "upsampler": cfg.model.model_params.upsampler,
-            "resi_connection": cfg.model.model_params.resi_connection,
-            "block_idxs": cfg.model.model_params.block_idxs,
-        }
-        log_prams = dict(**log_prams, **additional_params)
-
     return log_prams

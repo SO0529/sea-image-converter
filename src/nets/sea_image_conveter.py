@@ -7,6 +7,8 @@ from torch.optim.lr_scheduler import MultiStepLR
 from nets.funiegan import GeneratorFunieGAN, DiscriminatorFunieGAN
 from nets.rrdb_model import RRDBModel
 from nets.commons import Weights_Normal, VGG19_PercepLoss
+from utils import utils
+from utils.measure import Measure
 
 
 class SeaImageConverter(pl.LightningModule):
@@ -35,14 +37,18 @@ class SeaImageConverter(pl.LightningModule):
         self.patch = (1, self.input_shape[1]//16, self.input_shape[2]//16)  # 16x9 for 256x144
 
         # optimizer
-        self.lr = cfg.optimizer.lr
-        self.b1 = cfg.optimizer.b1
-        self.b2 = cfg.optimizer.b2
+        self.lr = cfg.trainer.optimizer.lr
+        self.b1 = cfg.trainer.optimizer.b1
+        self.b2 = cfg.trainer.optimizer.b2
 
         # schesuler
-        _milestones = list(map(lambda x: x * self.cfg.trainer.args.max_epochs, self.cfg.scheduler.milestones))
+        _milestones = list(map(lambda x: x * cfg.trainer.args.max_epochs, cfg.trainer.scheduler.milestones))
         self.milestones = list(set(list(map(lambda x: np.round(x), _milestones))))
         self.gamma = self.cfg.trainer.scheduler.gamma
+
+        # val
+        self.val_pre_perceptual_loss = torch.tensor(1.0)
+        self.measure = Measure()
 
     def forward(self, x):
         """
@@ -79,25 +85,44 @@ class SeaImageConverter(pl.LightningModule):
 
         # train discriminator
         if optimizer_idx == 1:
-            # Measure discriminator's ability to classify real from generated samples
+            fake_img = self(input_img)
+            real_pred = self.discriminator(gt_img, input_img)
+            fake_pred = self.discriminator(fake_img, input_img)
 
-            # how well can it label as real?
-            valid = torch.ones(imgs.size(0), 1)
-            valid = valid.type_as(imgs)
+            valid = torch.ones(input_img.size(0), *self.patch)
+            valid = valid.type_as(input_img)
+            real_loss = self.adversarial_loss(real_pred, valid)
 
-            real_loss = self.adversarial_loss(self.discriminator(imgs), valid)
+            fake = torch.zeros(input_img.size(0), *self.patch)
+            fake = fake.type_as(input_img)
+            fake_loss = self.adversarial_loss(fake_pred, fake)
 
-            # how well can it label as fake?
-            fake = torch.zeros(imgs.size(0), 1)
-            fake = fake.type_as(imgs)
+            d_loss = 0.5 * (real_loss + fake_loss) * 10.0
 
-            fake_loss = self.adversarial_loss(self.discriminator(self(z).detach()), fake)
-
-            # discriminator loss is the average of these
-            d_loss = (real_loss + fake_loss) / 2
             tqdm_dict = {"d_loss": d_loss}
             output = OrderedDict({"loss": d_loss, "progress_bar": tqdm_dict, "log": tqdm_dict})
             return output
+
+    def validation_step(self, batch, batch_idx):
+        # get input and gt batch
+        input_img = batch["input"]
+        gt_img = batch["gt"]
+
+        # generate image
+        with torch.no_grad():
+            generated_img = self(input_img)
+
+        # perceptual loss
+        gt_img = utils.tensor_to_lpips_format(gt_img)
+        generated_img = utils.tensor_to_lpips_format(generated_img)
+        if torch.isnan(generated_img).any():
+            perceptual_loss = self.val_pre_perceptual_loss
+        else:
+            # calc lpips @ (batch size, C, H, W)
+            perceptual_loss = self.measure.model.forward(gt_img, generated_img).mean()
+
+        # log
+        self.log("val_loss", perceptual_loss, prog_bar=True)
 
     def configure_optimizers(self):
         # oprimizer

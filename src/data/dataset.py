@@ -55,18 +55,17 @@ class DatasetPair(object):
         super(DatasetPair, self).__init__()
         self.cfg = cfg
         self.phase = phase
-        self.scale = cfg.scale
         self.n_channels = cfg.input_shape[0]
         self.patch_height = cfg.input_shape[1]
         self.patch_width = cfg.input_shape[2]
 
         # get paths
         if phase == "train":
-            self.gt_paths = utils.get_image_paths(cfg.train_data.dataroot_GT)
             self.input_paths = utils.get_image_paths(cfg.train_data.dataroot_IN)
+            self.gt_paths = utils.get_image_paths(cfg.train_data.dataroot_GT)
         elif phase == "val":
-            self.gt_paths = utils.get_image_paths(cfg.val_data.dataroot_GT)
             self.input_paths = utils.get_image_paths(cfg.val_data.dataroot_IN)
+            self.gt_paths = utils.get_image_paths(cfg.val_data.dataroot_GT)
 
     def __getitem__(self, index):
         # get gt and input image
@@ -74,7 +73,7 @@ class DatasetPair(object):
         gt_img = utils.imread_uint(gt_path, self.n_channels)
         gt_img = utils.uint2single(gt_img)
 
-        input_path = self.lr_paths[index]
+        input_path = self.input_paths[index]
         input_img = utils.imread_uint(input_path, self.n_channels)
         input_img = utils.uint2single(input_img)
 

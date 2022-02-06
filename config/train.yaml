@@ -2,6 +2,7 @@
 project: great-barrier-reef
 name: sea-iamge-converter
 debug: false
+resume: null
 
 #-------------ENV-------------
 # root_dir: /app
@@ -24,11 +25,13 @@ train_data:
 
 val_data:
   name: sea  # pickup last 100 images
-  dataroot_IN: ${dataset_dir}/underwater_dark/valA, ${dataset_dir}/underwater_imagenet/valA, ${dataset_dir}/underwater_scenes/valA
-  dataroot_GT: ${dataset_dir}/underwater_dark/valB, ${dataset_dir}/underwater_imagenet/valB, ${dataset_dir}/underwater_scenes/valB
+  dataroot_IN: ${dataset_dir}/underwater_dark/validA, ${dataset_dir}/underwater_imagenet/validA, ${dataset_dir}/underwater_scenes/validA
+  dataroot_GT: ${dataset_dir}/underwater_dark/validB, ${dataset_dir}/underwater_imagenet/validB, ${dataset_dir}/underwater_scenes/validB
 
 #-------------MODEL-------------
 model:
+  metric: val_loss
+  mode: min
   rrdb:
     nf: 64
     nb: 23
@@ -47,7 +50,7 @@ trainer:
     auto_select_gpus: true
     progress_bar_refresh_rate: 1
     accumulate_grad_batches: 4
-    stochastic_weight_avg: true
+    # stochastic_weight_avg: true
     # auto_scale_batch_size: binsearch
     # auto_lr_find: true
     gradient_clip_val: 0.5
