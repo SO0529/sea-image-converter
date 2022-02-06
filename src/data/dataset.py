@@ -90,7 +90,7 @@ class DatasetPair(object):
 
         # augmentation - flip and/or rotate
         if self.phase == "train":
-            mode = random.randint(0, 7)
+            mode = random.randint(0, 3)
             input_img, gt_img = utils.augment_img(input_img, mode=mode), utils.augment_img(gt_img, mode=mode)
 
         # HWC to CHW, numpy to tensor

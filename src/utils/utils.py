@@ -252,19 +252,11 @@ def augment_img(img, mode=0):
     if mode == 0:
         return img
     elif mode == 1:
-        return np.flipud(np.rot90(img))
-    elif mode == 2:
         return np.flipud(img)
-    elif mode == 3:
-        return np.rot90(img, k=3)
-    elif mode == 4:
+    elif mode == 2:
         return np.flipud(np.rot90(img, k=2))
-    elif mode == 5:
-        return np.rot90(img)
-    elif mode == 6:
+    elif mode == 3:
         return np.rot90(img, k=2)
-    elif mode == 7:
-        return np.flipud(np.rot90(img, k=3))
 
 
 def augment_img_tensor4(img, mode=0):
