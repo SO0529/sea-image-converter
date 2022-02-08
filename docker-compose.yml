@@ -1,10 +1,11 @@
 version: "3"
 services:
-  app:
-    image: sea-image-converter:v1
+  kaggle:
+    image: gcr.io/kaggle-gpu-images/python:latest
+    container_name: sea-image-converter
     volumes:
-      - ../:/app
-      - ../../../datasets:/datasets
+      - ./:/kaggle/working
+      - ../datasets/sea_images:/kaggle/input
     deploy:
       resources:
         reservations:
@@ -13,5 +14,3 @@ services:
               count: 1
               capabilities: [gpu]
     tty: true
-    shm_size: '16gb'
-

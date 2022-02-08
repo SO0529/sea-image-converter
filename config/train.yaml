@@ -5,19 +5,19 @@ debug: false
 resume: null
 
 #-------------ENV-------------
-# root_dir: /app
-root_dir: /Users/so/workspace/sea-image-converter
-# dataset_dir: /datasets
-dataset_dir: /Users/so/datasets/sea_images/Paired
-save_dir: ${root_dir}/output/${project}/${name}
+root_dir: /kaggle/working
+# root_dir: /Users/so/workspace/sea-image-converter
+dataset_dir: /kaggle/input/Paired
+# dataset_dir: /Users/so/datasets/sea_images/Paired
+save_dir: ${root_dir}/output/${name}
 accelerator: auto
 devices: -1
 
 #-------------DATA-------------
 input_shape: [3, 256, 144]
-batch_size: 16
-num_workers: 8
-prefetch_factor: 5
+batch_size: 1
+num_workers: 1
+prefetch_factor: 2
 train_data:
   name: sea
   dataroot_IN: ${dataset_dir}/underwater_dark/trainA, ${dataset_dir}/underwater_imagenet/trainA, ${dataset_dir}/underwater_scenes/trainA

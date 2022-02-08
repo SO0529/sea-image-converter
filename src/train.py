@@ -9,6 +9,7 @@ import torch
 from data.dataset import DataModule
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor
@@ -20,6 +21,7 @@ from utils import utils
 warnings.filterwarnings("ignore")
 CONFIG_FILE = "./config/train.yaml"
 DEBUG = True
+logger_type = "tensorboard"
 
 
 def train() -> None:
@@ -57,14 +59,20 @@ def train() -> None:
         resume_from_checkpoint = None
 
     # wandb logger
-    wandb_logger = WandbLogger(
-        project=cfg.project,
-        name=cfg.name,
-        log_model=True
-        )
-    wandb_logger.watch(model, log="gradients", log_freq=100)
-    log_params = utils.get_log_param(cfg)
-    wandb_logger.log_hyperparams(params=log_params)
+    if logger_type == "wandb":
+        logger = WandbLogger(
+            project=cfg.project,
+            name=cfg.name,
+            log_model=True
+            )
+        log_params = utils.get_log_param(cfg)
+        logger.log_hyperparams(params=log_params)
+
+        wandb_image_logger = ValImageLogger(
+            val_dataloader=dm.val_dataloader()
+            )
+    else:
+        logger = pl_loggers.TensorBoardLogger(cfg.save_dir)
 
     # callbacks
     early_stopping = EarlyStopping(
@@ -84,14 +92,12 @@ def train() -> None:
     lr_monitor = LearningRateMonitor(
         logging_interval="step"
     )
-    wandb_image_logger = ValImageLogger(
-        val_dataloader=dm.val_dataloader()
-        )
 
     # trainer
     trainer = pl.Trainer(
-        logger=wandb_logger,
-        callbacks=[model_checkpoint, early_stopping, wandb_image_logger, lr_monitor],
+        logger=logger,
+        # callbacks=[model_checkpoint, early_stopping, wandb_image_logger, lr_monitor],
+        callbacks=[model_checkpoint, early_stopping, lr_monitor],
         resume_from_checkpoint=resume_from_checkpoint,
         **cfg.trainer.args,
     )
