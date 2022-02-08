@@ -49,6 +49,18 @@ class DataModule(pl.LightningDataModule):
         )
         return val_loader
 
+    def test_dataloader(self):
+        test_loader = torch.utils.data.DataLoader(
+            DatasetPair(self.cfg, phase="test"),
+            batch_size=1,
+            shuffle=False,
+            num_workers=self.hparams.num_workers,
+            drop_last=True,
+            pin_memory=True,
+            prefetch_factor=self.hparams.prefetch_factor,
+        )
+        return test_loader
+
 
 class DatasetPair(object):
     def __init__(self, cfg, phase):
@@ -66,37 +78,45 @@ class DatasetPair(object):
         elif phase == "val":
             self.input_paths = utils.get_image_paths(cfg.val_data.dataroot_IN)
             self.gt_paths = utils.get_image_paths(cfg.val_data.dataroot_GT)
+        elif phase == "test":
+            self.input_paths = utils.get_image_paths(cfg.test_data.dataroot_IN)
+            self.gt_paths = None
 
     def __getitem__(self, index):
-        # get gt and input image
-        gt_path = self.gt_paths[index]
-        gt_img = utils.imread_uint(gt_path, self.n_channels)
-        gt_img = utils.uint2single(gt_img)
-
         input_path = self.input_paths[index]
         input_img = utils.imread_uint(input_path, self.n_channels)
         input_img = utils.uint2single(input_img)
 
-        assert (
-            gt_img.shape[0] == input_img.shape[0] and gt_img.shape[1] == input_img.shape[1]
-        ), "Error: Unmatch image shape."
+        if self.phase == "train" or self.phase == "val":
+            gt_path = self.gt_paths[index]
+            gt_img = utils.imread_uint(gt_path, self.n_channels)
+            gt_img = utils.uint2single(gt_img)
 
-        # crop following input_shape
-        h, w, _ = input_img.shape
-        rnd_h = random.randint(0, max(0, h - self.patch_height))
-        rnd_w = random.randint(0, max(0, w - self.patch_width))
-        input_img = input_img[rnd_h: rnd_h + self.patch_height, rnd_w: rnd_w + self.patch_width, :]
-        gt_img = gt_img[rnd_h: rnd_h + self.patch_height, rnd_w: rnd_w + self.patch_width, :]
+            assert (
+                gt_img.shape[0] == input_img.shape[0] and gt_img.shape[1] == input_img.shape[1]
+            ), "Error: Unmatch image shape."
 
-        # augmentation - flip and/or rotate
-        if self.phase == "train":
-            mode = random.randint(0, 3)
-            input_img, gt_img = utils.augment_img(input_img, mode=mode), utils.augment_img(gt_img, mode=mode)
+            # crop following input_shape
+            h, w, _ = input_img.shape
+            rnd_h = random.randint(0, max(0, h - self.patch_height))
+            rnd_w = random.randint(0, max(0, w - self.patch_width))
+            input_img = input_img[rnd_h: rnd_h + self.patch_height, rnd_w: rnd_w + self.patch_width, :]
+            gt_img = gt_img[rnd_h: rnd_h + self.patch_height, rnd_w: rnd_w + self.patch_width, :]
 
-        # HWC to CHW, numpy to tensor
-        input_img, gt_img = utils.single2tensor3(input_img), utils.single2tensor3(gt_img)
+            # augmentation - flip and/or rotate
+            if self.phase == "train":
+                mode = random.randint(0, 3)
+                input_img, gt_img = utils.augment_img(input_img, mode=mode), utils.augment_img(gt_img, mode=mode)
 
-        return {"input": input_img, "gt": gt_img, "input_path": input_path, "gt_path": gt_path}
+            # HWC to CHW, numpy to tensor
+            gt_img = utils.single2tensor3(gt_img)
+
+        input_img = utils.single2tensor3(input_img)
+
+        if self.phase == "train" or self.phase == "val":
+            return {"input": input_img, "gt": gt_img, "input_path": input_path, "gt_path": gt_path}
+        else:
+            return {"input": input_img, "input_path": input_path}
 
     def __len__(self):
-        return len(self.gt_paths)
+        return len(self.input_paths)

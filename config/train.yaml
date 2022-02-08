@@ -7,26 +7,31 @@ resume: null
 #-------------ENV-------------
 root_dir: /kaggle/working
 # root_dir: /Users/so/workspace/sea-image-converter
-dataset_dir: /kaggle/input/Paired
+dataset_dir: /kaggle/input
 # dataset_dir: /Users/so/datasets/sea_images/Paired
 save_dir: ${root_dir}/output/${name}
 accelerator: auto
 devices: -1
 
 #-------------DATA-------------
-input_shape: [3, 256, 144]
-batch_size: 1
-num_workers: 1
-prefetch_factor: 2
+input_shape: [3, 144, 256]
+batch_size: 4
+
+num_workers: 8
+prefetch_factor: 5
 train_data:
   name: sea
-  dataroot_IN: ${dataset_dir}/underwater_dark/trainA, ${dataset_dir}/underwater_imagenet/trainA, ${dataset_dir}/underwater_scenes/trainA
-  dataroot_GT: ${dataset_dir}/underwater_dark/trainB, ${dataset_dir}/underwater_imagenet/trainB, ${dataset_dir}/underwater_scenes/trainB
+  dataroot_IN: ${dataset_dir}/Paired/underwater_dark/trainA, ${dataset_dir}/Paired/underwater_imagenet/trainA, ${dataset_dir}/Paired/underwater_scenes/trainA
+  dataroot_GT: ${dataset_dir}/Paired/underwater_dark/trainB, ${dataset_dir}/Paired/underwater_imagenet/trainB, ${dataset_dir}/Paired/underwater_scenes/trainB
 
 val_data:
   name: sea  # pickup last 100 images
-  dataroot_IN: ${dataset_dir}/underwater_dark/validA, ${dataset_dir}/underwater_imagenet/validA, ${dataset_dir}/underwater_scenes/validA
-  dataroot_GT: ${dataset_dir}/underwater_dark/validB, ${dataset_dir}/underwater_imagenet/validB, ${dataset_dir}/underwater_scenes/validB
+  dataroot_IN: ${dataset_dir}/Paired/underwater_dark/validA, ${dataset_dir}/Paired/underwater_imagenet/validA, ${dataset_dir}/Paired/underwater_scenes/validA
+  dataroot_GT: ${dataset_dir}/Paired/underwater_dark/validB, ${dataset_dir}/Paired/underwater_imagenet/validB, ${dataset_dir}/Paired/underwater_scenes/validB
+
+test_data:
+  name: gbr
+  dataroot_IN: ${dataset_dir}/gbr_images
 
 #-------------MODEL-------------
 model:
@@ -43,8 +48,8 @@ trainer:
   resume: null
 
   args:
-    max_epochs: 1000
-    check_val_every_n_epoch: 20
+    max_epochs: 100
+    check_val_every_n_epoch: 10
     devices: ${devices}
     accelerator: ${accelerator}
     auto_select_gpus: true

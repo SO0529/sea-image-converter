@@ -5,7 +5,7 @@ services:
     container_name: sea-image-converter
     volumes:
       - ./:/kaggle/working
-      - ../datasets/sea_images:/kaggle/input
+      - ./sea_images:/kaggle/input
     deploy:
       resources:
         reservations:
@@ -14,3 +14,4 @@ services:
               count: 1
               capabilities: [gpu]
     tty: true
+    shm_size: '24gb'

@@ -20,8 +20,8 @@ from utils import utils
 
 warnings.filterwarnings("ignore")
 CONFIG_FILE = "./config/train.yaml"
-DEBUG = True
-logger_type = "tensorboard"
+DEBUG = False
+logger_type = "wandb"
 
 
 def train() -> None:
@@ -36,8 +36,8 @@ def train() -> None:
     OmegaConf.save(cfg, f"{cfg.save_dir}/config.yaml")
 
     if DEBUG:
-        cfg.trainer.args.max_epochs = 3
-        cfg.trainer.args.check_val_every_n_epoch = 1
+        cfg.trainer.args.max_epochs = 5
+        cfg.trainer.args.check_val_every_n_epoch = 5
         cfg.trainer.args.limit_train_batches = 2
         cfg.trainer.args.limit_val_batches = 1
         cfg.project = "debug"
@@ -96,8 +96,8 @@ def train() -> None:
     # trainer
     trainer = pl.Trainer(
         logger=logger,
-        # callbacks=[model_checkpoint, early_stopping, wandb_image_logger, lr_monitor],
-        callbacks=[model_checkpoint, early_stopping, lr_monitor],
+        callbacks=[model_checkpoint, early_stopping, wandb_image_logger, lr_monitor],
+        # callbacks=[model_checkpoint, early_stopping, lr_monitor],
         resume_from_checkpoint=resume_from_checkpoint,
         **cfg.trainer.args,
     )
@@ -113,6 +113,10 @@ def train() -> None:
     checkpoint = [s for s in glob(f"{model_checkpoint.dirpath}/*") if "best" in s][0]
     model = model.load_from_checkpoint(checkpoint_path=checkpoint, cfg=cfg)
     torch.save(model.state_dict(), f"{model_checkpoint.dirpath}/best_model.pth")
+
+    # test using best model
+    test_dataloader = dm.test_dataloader()
+    trainer.test(dataloaders=test_dataloader, ckpt_path=model_checkpoint.best_model_path)
 
 
 if __name__ == "__main__":

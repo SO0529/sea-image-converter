@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from collections import OrderedDict
 import torch
@@ -5,8 +6,7 @@ import pytorch_lightning as pl
 from torch.optim.lr_scheduler import MultiStepLR
 
 from nets.funiegan import GeneratorFunieGAN, DiscriminatorFunieGAN
-from nets.rrdb_model import RRDBModel
-from nets.commons import Weights_Normal, VGG19_PercepLoss
+from nets.commons import VGG19_PercepLoss
 from utils import utils
 from utils.measure import Measure
 
@@ -49,6 +49,8 @@ class SeaImageConverter(pl.LightningModule):
         # val
         self.val_pre_perceptual_loss = torch.tensor(1.0)
         self.measure = Measure()
+
+        self.save_dir = cfg.save_dir
 
     def forward(self, x):
         """
@@ -123,6 +125,60 @@ class SeaImageConverter(pl.LightningModule):
 
         # log
         self.log("val_loss", perceptual_loss, prog_bar=True)
+
+    def test_step(self, batch, batch_idx):
+        torch.cuda.empty_cache()
+        # get images
+        input_img = batch["input"]
+        assert input_img.shape[0] == 1, "Test batch size should be 1"
+        img_name = os.path.splitext(os.path.basename(batch["input_path"][0]))[0]
+
+        # make dirctries to save result
+        paths = ["input", "output"]
+        for path in paths:
+            utils.mkdir(f"{self.save_dir}/test_results/{path}")
+
+        # adjust image size
+        input_original = input_img.detach()
+        # h, w = input_img.shape[2], input_img.shape[3]
+        # pad_factor = 8
+        # pad_r = int((w // pad_factor + 1) * pad_factor - w)
+        # pad_b = int((h // pad_factor + 1) * pad_factor - h)
+        # # (left, right, top, bottom)
+        # p2d = (0, pad_r, 0, pad_b)
+        # input_img = F.pad(input_img, p2d, "reflect")
+
+        # generate image
+        with torch.no_grad():
+            generated_img = self(input_img)
+        # generated_img = generated_img[:, :, : h, : w]
+
+        input_np = utils.tensor2img(input_original)
+        generated_np = utils.tensor2img(generated_img)
+
+        # save generated image
+        filename = f"{img_name}_output.png"
+        utils.save_image(f"{self.save_dir}/test_results/output/{filename}", generated_np)
+
+        # save input image
+        filename = f"{img_name}_input.png"
+        utils.save_image(f"{self.save_dir}/test_results/input/{filename}", input_np)
+
+        # grid image for wandb
+        grid_img = utils.make_grid_img([input_original, generated_img], n_rows=1)
+
+        # store results to get all results
+        self.test_grids.append(grid_img)
+
+    def on_test_epoch_start(self):
+        # make outputs folder inder hydra root
+        utils.mkdir(f"{self.save_dir}/test_results")
+        # list to save result on each step
+        self.test_grids = []
+
+    def on_test_epoch_end(self):
+        # upload grid images to wandb
+        self.logger.log_image("gbr", self.test_grids)
 
     def configure_optimizers(self):
         # oprimizer
