@@ -83,6 +83,7 @@ class SeaImageConverter(pl.LightningModule):
             total_g_loss = g_loss + self.l1_alpha * l1_loss + self.vgg_alpha * vgg_loss
             tqdm_dict = {"g_loss": total_g_loss}
             output = OrderedDict({"loss": total_g_loss, "progress_bar": tqdm_dict, "log": tqdm_dict})
+            self.log("g_loss", total_g_loss, prog_bar=True)
             return output
 
         # train discriminator
@@ -103,6 +104,7 @@ class SeaImageConverter(pl.LightningModule):
 
             tqdm_dict = {"d_loss": d_loss}
             output = OrderedDict({"loss": d_loss, "progress_bar": tqdm_dict, "log": tqdm_dict})
+            self.log("d_loss", d_loss, prog_bar=True)
             return output
 
     def validation_step(self, batch, batch_idx):

@@ -2,7 +2,8 @@
 project: great-barrier-reef
 name: sea-iamge-converter
 debug: false
-resume: null
+# resume: null
+resume: /kaggle/working/output/sea-iamge-converter_2022-02-09-01-32/saved_model/last.ckpt
 
 #-------------ENV-------------
 root_dir: /kaggle/working

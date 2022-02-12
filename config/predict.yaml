@@ -1,0 +1,65 @@
+#----------GENERAL-----------
+project: great-barrier-reef
+name: sea-iamge-converter-predict
+debug: false
+
+model_path: /kaggle/working/saved_model/best_model.pth
+
+#-------------ENV-------------
+root_dir: /kaggle/working
+# root_dir: /Users/so/workspace/sea-image-converter
+dataset_dir: gbr/datasets/train_images
+# dataset_dir: /Users/so/datasets/sea_images/Paired
+save_dir: gbr/datasets/generated_images
+concat_save_dir: gbr/datasets/concat_images
+accelerator: auto
+devices: -1
+
+#-------------DATA-------------
+input_shape: [3, 144, 256]
+
+bucket_name: otani-work
+target_dir: ${dataset_dir}/video_0,${dataset_dir}/video_1,${dataset_dir}/video_2
+
+#-------------MODEL-------------
+model:
+  metric: val_loss
+  mode: min
+  rrdb:
+    nf: 64
+    nb: 23
+    gc: 32
+
+#------------TRAINER------------
+trainer:
+  manual_seed: 10
+  resume: null
+
+  args:
+    max_epochs: 100
+    check_val_every_n_epoch: 10
+    devices: ${devices}
+    accelerator: ${accelerator}
+    auto_select_gpus: true
+    progress_bar_refresh_rate: 1
+    accumulate_grad_batches: 4
+    # stochastic_weight_avg: true
+    # auto_scale_batch_size: binsearch
+    # auto_lr_find: true
+    gradient_clip_val: 0.5
+    limit_train_batches: 1e8    # for debug
+    limit_val_batches: 1e8      # for debug
+    benchmark: true
+    deterministic: false
+    amp_backend: apex
+    amp_level: O1   # mixed precision
+  
+  optimizer:
+    lr: 5e-4
+    b1: 0.5
+    b2: 0.99
+  
+  scheduler:
+    milestones: [0.5, 0.75, 0.9, 0.95]
+    gamma: 0.5
+

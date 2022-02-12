@@ -1,5 +1,7 @@
 wandb/*
 output/*
+sea_images/*
+saved_model/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
