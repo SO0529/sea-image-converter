@@ -3,7 +3,7 @@ project: great-barrier-reef
 name: sea-iamge-converter-predict
 debug: false
 
-model_path: /kaggle/working/saved_model/best_model.pth
+model_path: /kaggle/input/sea-image-converter-model/saved_model/best_model.pth
 
 #-------------ENV-------------
 root_dir: /kaggle/working

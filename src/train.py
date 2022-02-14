@@ -51,6 +51,7 @@ def train() -> None:
 
     # cread model
     model = SeaImageConverter(cfg)
+    model.train_setup()
 
     # resume
     if cfg.resume is not None:

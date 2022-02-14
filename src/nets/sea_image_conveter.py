@@ -29,20 +29,22 @@ class SeaImageConverter(pl.LightningModule):
         )
         self.discriminator = DiscriminatorFunieGAN()
 
+        self.vgg_loss = VGG19_PercepLoss()     # content loss (vgg)
+
+    def train_setup(self):
         # losses
         self.adversarial_loss = torch.nn.MSELoss()
         self.l1_loss = torch.nn.L1Loss()       # similarity loss (l1)
-        self.vgg_loss = VGG19_PercepLoss()     # content loss (vgg)
         self.l1_alpha, self.vgg_alpha = 7, 3     # 7:3 (as in paper)
         self.patch = (1, self.input_shape[1]//16, self.input_shape[2]//16)  # 16x9 for 256x144
 
         # optimizer
-        self.lr = cfg.trainer.optimizer.lr
-        self.b1 = cfg.trainer.optimizer.b1
-        self.b2 = cfg.trainer.optimizer.b2
+        self.lr = self.cfg.trainer.optimizer.lr
+        self.b1 = self.cfg.trainer.optimizer.b1
+        self.b2 = self.cfg.trainer.optimizer.b2
 
         # schesuler
-        _milestones = list(map(lambda x: x * cfg.trainer.args.max_epochs, cfg.trainer.scheduler.milestones))
+        _milestones = list(map(lambda x: x * self.cfg.trainer.args.max_epochs, self.cfg.trainer.scheduler.milestones))
         self.milestones = list(set(list(map(lambda x: np.round(x), _milestones))))
         self.gamma = self.cfg.trainer.scheduler.gamma
 
@@ -50,7 +52,7 @@ class SeaImageConverter(pl.LightningModule):
         self.val_pre_perceptual_loss = torch.tensor(1.0)
         self.measure = Measure()
 
-        self.save_dir = cfg.save_dir
+        self.save_dir = self.cfg.save_dir
 
     def forward(self, x):
         """
