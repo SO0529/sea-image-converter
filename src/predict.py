@@ -24,14 +24,16 @@ def predict() -> None:
 
     # cread model
     model = SeaImageConverter(cfg)
-    model.load_state_dict(torch.load(cfg.model_path))
+    load = torch.load(cfg.model_path)
+    load = {k: v for k, v in load.items() if "vgg" not in k}
+    model.load_state_dict(load)
     model.eval().to(device)
 
     # gcs
     client_storage = storage.Client()
     bucket = client_storage.get_bucket(cfg.bucket_name)
 
-    datasets = [dataset for dataset in cfg.target_dir.split(',')] 
+    datasets = [dataset for dataset in cfg.target_dir.split(',')]
 
     for dataset in datasets:
         dataset_name = dataset.split("/")[-1]
@@ -73,7 +75,6 @@ def predict() -> None:
             grid_pil.save(bio, format='png')
             blob = Blob(f"{cfg.concat_save_dir}/{dataset_name}/{img_name}_concat.png", bucket)
             blob.upload_from_string(data=bio.getvalue(), content_type="image/png")
-
 
 
 if __name__ == "__main__":

@@ -29,12 +29,11 @@ class SeaImageConverter(pl.LightningModule):
         )
         self.discriminator = DiscriminatorFunieGAN()
 
-        self.vgg_loss = VGG19_PercepLoss()     # content loss (vgg)
-
     def train_setup(self):
         # losses
         self.adversarial_loss = torch.nn.MSELoss()
         self.l1_loss = torch.nn.L1Loss()       # similarity loss (l1)
+        self.vgg_loss = VGG19_PercepLoss()     # content loss (vgg)
         self.l1_alpha, self.vgg_alpha = 7, 3     # 7:3 (as in paper)
         self.patch = (1, self.input_shape[1]//16, self.input_shape[2]//16)  # 16x9 for 256x144
 
